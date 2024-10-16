@@ -1,0 +1,16 @@
+.kb-active {
+    outline: 2px solid #007BFF !important; /* Borda azul ao redor do elemento focado */
+    outline-offset: 2px !important; /* Espaçamento entre a borda e o conteúdo do elemento */
+    background-color: #e7f0ff !important; /* Cor de fundo quando o elemento está em foco */
+    box-shadow: 0 0 0 3px rgba(38, 143, 255, 0.5) !important; /* Sombra para destaque */
+    border-radius: 4px !important; /* Borda arredondada, se aplicável */
+}
+.kb-active  {
+    text-decoration: underline !important; /* Sublinhado ao link em foco */
+    color: #0056b3 !important; /* Cor do texto quando o link está em foco */
+}
+.kb-active  {
+    border: 2px solid #007BFF !important; /* Borda azul ao redor do campo de texto em foco */
+    background-color: #f1f9ff !important; /* Cor de fundo do campo de texto quando em foco */
+    box-shadow: 0 0 0 2px rgba(38, 143, 255, 0.3) !important; /* Sombra leve para destaque */
+}
