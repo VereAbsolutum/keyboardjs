@@ -323,7 +323,7 @@ class FocusElementAction {
             DROPDOWN_OPEN: 'btn-group, open'
         }
 
-        this.setDataKeyAttribute();
+        //this.setDataKeyAttribute();
         this.setTagName();
     }
 
@@ -359,8 +359,8 @@ class FocusElementAction {
 
     /** Setters */
 
-    setDataKeyAttribute() {
-        const i = this.pos;
+    setDataKeyAttribute(i) {
+        //const i = this.pos;
         const element = this.getElement();
         const hotkey = this.generateKey(i);
         element.setAttribute('data-kb-key', hotkey);
@@ -569,7 +569,7 @@ class FocusElement {
 
     setActions() {
         if (!this.hasActions()){
-            return;
+            return [];
         }
 
         if (this.isRow()) {
@@ -825,19 +825,62 @@ class Container {
         }
     }
 
+    compareStr(str1, str2) {
+        return str1.toUpperCase() === str2.toUpperCase();
+    }
+
     buildFocusElement(element) {
         return new FocusElement(element)
+    }
+
+    getMaxFocusableInLastColumns(focusables) {
+        if (!focusables || focusables.length === 0) return [];
+
+        let maxFocusables = [];
+
+        focusables.forEach(row => {
+            const children = row.getElement().children;
+            const clen = children.length;
+
+            for (let n = 1; n <= 3; n++) {
+                if (clen < n) break; 
+
+                const child = children[clen - n]; 
+
+                const focusableCount = row.getActions()
+                    .map(a => a.getElement())
+                    .filter(el => el !== null && child.contains(el)).length;
+
+                if (maxFocusables[n - 1] !== undefined) {
+                    maxFocusables[n - 1] = Math.max(maxFocusables[n - 1], focusableCount);
+                } else {
+                    maxFocusables[n - 1] = focusableCount;
+                }
+            }
+        });
+
+        return maxFocusables; // Retorna na ordem desejada (última, penúltima, antepenúltima)
+    }
+
+    setupFocusables(focusables) {
+        const containerName = this.getName();
+
+        if (this.compareStr(containerName, 'row')) {
+            const a = this.getMaxFocusableInLastColumns(focusables);
+            console.log(a);
+        }
     }
 
     getFocusables() {
         const selector = this.selector;
         const elementSelectors = this.selectorElements;
         const compoundSelectors = this.combineSelector(selector, elementSelectors)
-
-        return Array
+        const focusables = Array
             .from(document.body.querySelectorAll(compoundSelectors))
             .filter(this.validFocusable.bind(this))
-            .map(this.buildFocusElement.bind(this))
+            .map(this.buildFocusElement.bind(this));
+        this.setupFocusables(focusables);
+        return focusables; 
     }
 
     setElements() {
@@ -1063,6 +1106,8 @@ class Keyboard {
 
             map.push(container);
         }
+
+        console.log('map', map);
 
         return map;
     }
