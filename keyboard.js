@@ -45,7 +45,7 @@ class Stack {
     }
 
     getItems() {
-        return this.items.slice(); // Retorna uma cópia do array de itens
+        return this.items.slice(); 
     }
 }
 
@@ -139,7 +139,7 @@ class HotkeyManager {
             DATA_KB_GLOBAL_KEY: 'data-kb-global-key',
         };
         this.keyPressed = {
-            ESCAPE: 'Ctrl + Escape',
+            ESCAPE: 'Escape',
             ENTER: 'Ctrl + Enter',
             SHOW_GLOBAL_KEYS: 'Ctrl + Alt + H',
         };
@@ -156,6 +156,14 @@ class HotkeyManager {
             .toUpperCase()
             .replace(/\s+/g, '')
             .split('+')
+            .sort();
+    }
+
+    normalizeKey_(keyStr) {
+        return keyStr
+            .toUpperCase()
+            .replace(/\s+/g, '')
+            .split('+')
             .sort()
             .join('+');
     }
@@ -167,7 +175,7 @@ class HotkeyManager {
 
     keyValidation(e) {
         const key = e.getAttribute(this.attributes.DATA_KB_GLOBAL_KEY);
-        return key ? this.isValidKey(key) : false;
+        return key ? key : false;
     }
 
     cleanEvents() {
@@ -225,9 +233,44 @@ class HotkeyManager {
         }
 
         const { key, shiftKey, altKey, ctrlKey, target } = e;
+        const hotkey = [shiftKey, altKey, ctrlKey, key].filter(Boolean).map(k => k.toUpperCase());
 
-        this.pressedKeys.push(key);
-        const pressedKeys = this.pressedKeys.getItems();
+        //this.pressedKeys.push(key);
+        //const pressedKeys = this.pressedKeys.getItems();
+
+        const pressedKey = `${e.ctrlKey ? 'Ctrl + ' : ''}${e.altKey ? 'Alt + ' : ''}${e.key}`;
+
+        if (this.normalizeKey(pressedKey) === this.normalizeKey(this.keyPressed.SHOW_GLOBAL_KEYS)) {
+            this.showPageGlobalKeys();
+            return; 
+        }
+
+        const buttons = this.node.querySelectorAll(this.selectors.DATA_KB_GLOBAL_KEY);
+        const validActions = Array.from(buttons).filter(this.keyValidation.bind(this));
+
+        for(const a of validActions) {
+            const kbKey = a.getAttribute(this.attributes.DATA_KB_GLOBAL_KEY);
+            const normalizedkey = this.normalizeKey(kbKey);
+            if (normalizedkey.every(k => hotkey.includes(k.toUpperCase()))) {
+                setTimeout(() => {
+                    a.click();
+                    console.log('CLICK action', a);
+                }, 100);
+                break;
+            }
+        }
+    }
+
+    onkeydown_SALVO(e) {
+        if (!e) {
+            return;
+        }
+
+        const { key, shiftKey, altKey, ctrlKey, target } = e;
+        const hotkey = [shiftKey, altKey, ctrlKey, key].filter(key => key !== null);
+
+        //this.pressedKeys.push(key);
+        //const pressedKeys = this.pressedKeys.getItems();
 
         const pressedKey = `${e.ctrlKey ? 'Ctrl + ' : ''}${e.altKey ? 'Alt + ' : ''}${e.key}`;
 
