@@ -464,6 +464,48 @@ class FocusElementAction {
     }
 }
 
+
+class ShouldStopNavigationValidator__ {
+
+    constructor(element, keyboardInstance) {
+        this.element = element;
+        this.keyboardInstance = keyboardInstance;
+        this.selectors = {
+            SELECTOR2: 'select2-container'
+        }
+    }
+
+    getElement() {
+        return this.element
+    }
+
+    validate(){ 
+        const element = this.getElement();
+        if (this.isSelect2(element)) {
+            this.stopNavigationElement(element, this.selectors.SELECTOR2);
+        }
+    }
+
+    stopNavigationElement(element, selector) {
+        this.keyboardInstance.setStopNavigation(false);
+        const container = element.closest(selector);
+        container.addEventListener('focusOut', () =>  this.onFocusOut(container));
+        this.keyboardInstance.setStopNavigation();
+    }
+
+    onFocusOut(container) {
+        setTimeout(() => {
+            if (!container.contains(document.activeElement)) {
+                this.keyboardInstance.setStopNavigation(false);
+            }
+        }, 0);
+    }
+
+    isSelect2(element) {
+        return element.closest(this.selectors.SELECTOR2) !== null;
+    }
+}
+
 class FocusElement {
 
     constructor(element) {
@@ -477,7 +519,8 @@ class FocusElement {
                 '[title="Collapse"]',
                 'button'
             ],
-            TABS: '[role="tab"]'
+            TABS: '[role="tab"]',
+            SELECT2: '.select2-container'
         }
 
         this.tagNames = {
@@ -562,6 +605,16 @@ class FocusElement {
             .map((e, i) =>  new FocusElementAction(e, i));
     }
 
+    shouldStopPropagation() {
+        const element = this.getElement();
+        return element.closest(this.selectors.SELECT2) !== null;
+    }
+
+    shouldStopNavigation () {
+        const element = this.getElement();
+        return element.closest(this.selectors.SELECT2) !== null;
+    }
+
     getActions(){
         this.setActions();
         return this.actions;
@@ -577,7 +630,6 @@ class FocusElement {
         }
     }
 }
-
 
 class DomObserver {
     constructor(name, selector, callback) {
@@ -898,7 +950,6 @@ class Container {
 
 }
 
-
 class Keyboard {
 
     constructor(node) {
@@ -913,7 +964,7 @@ class Keyboard {
             XXL_TEST: 2000,
         }
 
-        this.className ={
+        this.className = {
             ACTIVE: "kb-active",
             TABS: "[role='tab']"
         }
@@ -984,18 +1035,18 @@ class Keyboard {
                 selectorElements: ['tbody tr'],
             },
             {
-                name: "pagination",
+                name: this.containerName.PAGINATOR,
                 selector: '.pagination',
                 selectorElements: ['a', 'button'],
             },
             {
-                name: "form_body",
-                selector: '.form',
+                name: this.containerName.FORM_BODY,
+                selector: '.form .tab-content ',
                 selectorElements: this.interactiveSelectors,
                 exclude: ['.kv-grid-panel']
             },
             {
-                name: "tabs",
+                name: this.containerName.TABS,
                 selector: '.nav-tabs',
                 selectorElements: ['[role="tab"]'],
             },
@@ -1255,6 +1306,34 @@ class Keyboard {
             }
         }
     }
+
+    stopNavigationField(focusElement) {
+        if (!focusElement) return;
+    
+        this.setStopNavigation(true);
+        const element = focusElement.getElement();
+        const container = element.closest(focusElement.selectors.SELECT2);
+    
+        if (!container) return; 
+    
+        console.log(document.activeElement);
+    
+        const onkeydown = (event) => {
+            const { key, shiftKey } = event;
+            setTimeout(() => {
+                if (key === this.keyPressed.TAB || (shiftKey && key === this.keyPressed.TAB)) {
+                    this.setStopNavigation(false);
+                    const pos = this.handleShiftKey(shiftKey);
+                    this.focus(pos);
+                    container.removeEventListener('keydown', onkeydownBound); 
+                }
+            }, 0);
+        };
+    
+        const onkeydownBound = onkeydown.bind(this);
+        
+        container.addEventListener('keydown', onkeydownBound);
+    }
     
     focusPointer(pos) {
         let container = this.getCurrContainer();
@@ -1279,6 +1358,11 @@ class Keyboard {
 
         container.updateFocusElementPos(pos);
 
+        const focusElement = container.getFocusElements();
+        if (focusElement[pos].shouldStopNavigation()) {
+            this.stopNavigationField(focusElement[pos]);
+        }
+
         return true;
     }
 
@@ -1286,6 +1370,7 @@ class Keyboard {
         if (this.focusPointer(pos)) {
             const container = this.getCurrContainer();
             const elements = container.getElements();
+            console.log('element',elements[pos].tagName);
             elements[pos].focus();
         }
     }
